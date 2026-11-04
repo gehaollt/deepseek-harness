@@ -190,6 +190,8 @@ pnpm run package:linux:x64:unsigned
 
 运行应用需要可用的 Chromium 沙箱。打包产物中的 `chrome-sandbox` helper 不是 setuid-root，且 AppImage 挂载会忽略 setuid 位，因此应用使用内核的非特权 user namespace 沙箱；在限制该能力的发行版上（Ubuntu 23.10 及以后），执行一次 `echo 'kernel.apparmor_restrict_unprivileged_userns = 0' | sudo tee /etc/sysctl.d/60-electron-userns.conf && sudo sysctl --system` 即可。对解包后的应用目录，另一种做法是在可执行文件旁执行 `sudo chown root:root chrome-sandbox && sudo chmod 4755 chrome-sandbox`。
 
+桌面环境通过 `.desktop` 入口感知 `dsh` URL scheme，解包或本地 AppImage 运行不会安装该入口。为协议触发的登录和 `dsh://open` 深链注册一次：创建 `~/.local/share/applications/deepseek-harness.desktop`，写入 `MimeType=x-scheme-handler/dsh;` 和指向应用可执行文件并以 `%u` 结尾的 `Exec` 行，然后运行 `xdg-mime default deepseek-harness.desktop x-scheme-handler/dsh`。
+
 <a id="macos-release-signing"></a>
 
 ## macOS 发布签名与诊断

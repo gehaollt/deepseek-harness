@@ -190,6 +190,8 @@ These commands ignore release settings, use `com.deepseek.harness` as the app ID
 
 Running the application needs a working Chromium sandbox. The packaged `chrome-sandbox` helper is not setuid-root, and AppImage mounts ignore the setuid bit, so the application uses the kernel's unprivileged user-namespace sandbox; on distributions that restrict it (Ubuntu 23.10 and later), enable it once with `echo 'kernel.apparmor_restrict_unprivileged_userns = 0' | sudo tee /etc/sysctl.d/60-electron-userns.conf && sudo sysctl --system`. For an unpacked application directory, an alternative is `sudo chown root:root chrome-sandbox && sudo chmod 4755 chrome-sandbox` beside the executable.
 
+The desktop environment learns the `dsh` URL scheme from a `.desktop` entry, which an unpacked or AppImage-local build does not install. Register it once for protocol-triggered sign-in and `dsh://open` deep links: create `~/.local/share/applications/deepseek-harness.desktop` with `MimeType=x-scheme-handler/dsh;` and an `Exec` line naming the application binary followed by `%u`, then run `xdg-mime default deepseek-harness.desktop x-scheme-handler/dsh`.
+
 <a id="macos-release-signing"></a>
 
 ## macOS release signing and diagnostics
