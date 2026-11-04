@@ -260,9 +260,15 @@ export function createElectronBuilderConfig(
       // electron-builder derives executableName from the scoped package name otherwise,
       // and AppImage rejects the @ and / characters it produces.
       executableName: 'deepseek-harness',
-      icon: fileURLToPath(new URL('../resources/icon-windows.png', import.meta.url)),
+      // A directory of pre-rendered sizes: the freedesktop icon lookup only finds hicolor sizes
+      // declared in index.theme, and a single 1024 px PNG lands in an undeclared directory.
+      icon: fileURLToPath(new URL('../resources/linux-icons', import.meta.url)),
       category: 'Development',
-      target: ['AppImage'],
+      target: ['AppImage', 'deb'],
+      maintainer: 'Hangzhou DeepSeek Artificial Intelligence Co., Ltd. <noreply@deepseek.com>',
+      // Make Electron use the desktop entry's name as the window app_id, so the dock, the
+      // icon theme and the dsh URL handler all resolve to this desktop file.
+      syncDesktopName: true,
     },
     nsis: {
       uninstallDisplayName: '${productName}',

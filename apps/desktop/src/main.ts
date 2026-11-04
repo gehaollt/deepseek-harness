@@ -1190,10 +1190,12 @@ async function main(): Promise<void> {
   }
   refreshApplicationMenu()
   const trayIconPath = development ? join(app.getAppPath(), 'resources', 'tray-windows.ico') : join(process.resourcesPath, 'tray.ico')
-  if (process.platform === 'win32') {
+  // Windows and Linux expose the tray: it is the way back to a hidden window on both, while macOS
+  // keeps the Dock and ships no menu bar icon. Windows renders the multi-size ICO; Linux the PNG.
+  if (process.platform !== 'darwin') {
     // The tray is the way back to a hidden window; without it, relaunching the application still focuses it.
     try {
-      tray = new DesktopTray({ iconPath: trayIconPath, locale: currentDesktopLocale,
+      tray = new DesktopTray({ iconPath: process.platform === 'win32' ? trayIconPath : applicationIconPath, locale: currentDesktopLocale,
         open: () => { focusPrimaryWindow() }, quit: () => { app.quit() } })
     } catch (error) { console.warn('desktop tray: unavailable', error) }
   }
@@ -1549,6 +1551,11 @@ async function main(): Promise<void> {
 }
 
 const ownsDesktopInstance = claimDesktopSingleInstance(app, () => { focusPrimaryWindow() })
+
+// GNOME's Wayland app_id does not reliably match the desktop entry for packaged Electron builds,
+// which blanks the dock icon; X11 through XWayland keeps the window class, the tray and the GPU
+// path working. Append before the app is ready so the Ozone platform is chosen from this switch.
+if (process.platform === 'linux') app.commandLine.appendSwitch('ozone-platform-hint', 'x11')
 
 if (ownsDesktopInstance) void app.whenReady().then(main).catch(async (error: unknown) => {
   const message = error instanceof Error ? error.message : String(error)
