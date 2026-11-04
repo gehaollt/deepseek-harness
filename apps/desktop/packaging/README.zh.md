@@ -97,7 +97,7 @@ pnpm run package:desktop:mac:x64
 pnpm run package:desktop:win:x64
 ```
 
-macOS arm64 命令要求 Apple Silicon。macOS x64 命令可以在 Intel macOS 或带 Rosetta 的 Apple Silicon 上运行。Windows x64 命令要求 Windows x64。Linux 不是受支持的 Desktop 发布目标。
+macOS arm64 命令要求 Apple Silicon。macOS x64 命令可以在 Intel macOS 或带 Rosetta 的 Apple Silicon 上运行。Windows x64 命令要求 Windows x64。Linux x64 命令要求 Linux x64 宿主，仅支持未签名的本地构建；它不是发布目标，不生成更新源或发布记录。
 
 macOS 正式发布和本地未签名 DMG 都通过 [electron-builder 配置](../scripts/electron-builder-config.mjs)中的 `dmg.format: 'ULMO'` 使用 LZMA 压缩。[构建时补丁](../../../patches/app-builder-lib@26.17.0.patch)为固定版本 builder 的校验规则和 TypeScript 声明添加此格式。
 
@@ -173,6 +173,20 @@ pnpm run package:desktop:mac:x64:unsigned
 添加 `--check` 仅验证本地配置和工具而不构建，或添加 `--dir` 只生成解包应用。DMG 路径为 `apps/desktop/.desktop-build/targets/<target>/unsigned-artifacts/deepseek-harness-<version>-mac-<arch>-unsigned.dmg`。所有检查通过后，命令打印 `DMG:` 及其绝对路径。打开后将应用复制到本地测试目录。
 
 这些命令忽略 `.env.macos` 和继承的发布配置，使用 `com.deepseek.harness` 作为应用 ID，并省略自动更新和强制更新配置。构建工具、标准网络代理与 `DSH_DESKTOP_NPM_REGISTRY` 仍可从 shell 提供。它们跳过 Developer ID 签名、Apple 公证、临时签名钥匙串和公证代理修改。Electron 使用无需证书的本地 ad-hoc 签名，以便修改后的可执行文件能够运行；DMG 不签名。准备阶段和组装后的应用仍执行运行时完整性与冒烟检查。本地构建不生成更新源、ZIP 或发布完成记录，上传命令无法发布这些产物。macOS 可能要求在“系统设置 → 隐私与安全性”中批准打开未经公证的应用。这类构建不放入 Computer Use helper，Computer Use 准备时会报告 helper 缺失。
+
+<a id="local-linux-appimage"></a>
+
+## 本地 Linux AppImage
+
+在 Linux x64 宿主上，从仓库根目录运行一条命令。无需 dotenv、签名或更新服务配置：
+
+```sh
+pnpm run package:linux:x64:unsigned
+```
+
+追加 `--check` 只校验本地配置和工具而不构建，或追加 `--dir` 停在解包后的应用目录。AppImage 位于 `apps/desktop/.desktop-build/targets/linux-x64/unsigned-artifacts/deepseek-harness-<version>-linux-x86_64-unsigned.AppImage`。全部检查通过后，命令会打印 `AppImage:` 及其绝对路径；赋予可执行权限后直接运行。
+
+这些命令忽略发布配置，使用 `com.deepseek.harness` 作为应用 ID，并省略自动更新和强制更新配置。没有签名、公证或发布完成记录，上传命令无法发布该产物。构建需要 GNU tar；依赖安装和运行时准备需要访问 npm、GitHub release 资源、nodejs.org 和 pythonhosted.org，网络需要时使用现有 registry 和代理配置。运行时内置 Electron 安全版 sharp 重建，因为 Electron 的 Linux 二进制会把系统 glib 符号泄漏进进程，导致上游 sharp 首次图片解码时崩溃；一个 runtime-only [LibreOffice kit 补丁](../patches/@deepseek-ai__libreoffice-kit@0.1.5.patch)保证打包 ASAR 内的引擎解析器回退到 WASM。这类构建不放入 Computer Use helper。
 
 <a id="macos-release-signing"></a>
 

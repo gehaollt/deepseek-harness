@@ -21,8 +21,8 @@
   en: 8cc17b1e5ae3e422
   zh: 7de3e4f1e76be3e3
 /desktop-packaging/configuration-and-local-builds:
-  en: 5b4f0f80a117f202
-  zh: ff05be196c181087
+  en: 1428cd523afbd054
+  zh: 3264a85f38c09090
 /desktop-packaging/windows-actions-packaging:
   en: 253e17998951931c
   zh: b582b377391d2ec2
@@ -33,8 +33,11 @@
   en: f429bc0c280e2dfa
   zh: 4adbcc9e906bdf80
 /desktop-packaging/local-macos-dmg-without-release-signing:
-  en: 1146bbc11be43960
-  zh: 7c13543a0513c059
+  en: f0a7f15bb292d2c0
+  zh: 78c5708746558ed7
+/desktop-packaging/local-linux-appimage:
+  en: a8e515c662df7e14
+  zh: e47396feb5d1f978
 /desktop-packaging/macos-release-signing-and-diagnostics:
   en: a0b4aa1080ecf6fb
   zh: 37d4b8934f89bee8

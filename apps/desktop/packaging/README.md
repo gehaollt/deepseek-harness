@@ -97,7 +97,7 @@ pnpm run package:desktop:mac:x64
 pnpm run package:desktop:win:x64
 ```
 
-The macOS arm64 command requires Apple Silicon. The macOS x64 command runs on Intel macOS or Apple Silicon with Rosetta. The Windows x64 command requires Windows x64. Linux is not a supported Desktop release target.
+The macOS arm64 command requires Apple Silicon. The macOS x64 command runs on Intel macOS or Apple Silicon with Rosetta. The Windows x64 command requires Windows x64. The Linux x64 command requires a Linux x64 host and supports only unsigned local builds; it is not a release target and creates no update feed or release record.
 
 Both release and local unsigned macOS DMGs use LZMA compression (`dmg.format: 'ULMO'`) in [the electron-builder configuration](../scripts/electron-builder-config.mjs). A [build-time patch](../../../patches/app-builder-lib@26.17.0.patch) adds this format to the pinned builder's validation and TypeScript declarations.
 
@@ -173,6 +173,20 @@ pnpm run package:desktop:mac:x64:unsigned
 Add `--check` to validate local configuration and tools without building, or `--dir` to stop at the unpacked application. The DMG is `apps/desktop/.desktop-build/targets/<target>/unsigned-artifacts/deepseek-harness-<version>-mac-<arch>-unsigned.dmg`. After all checks pass, the command prints `DMG:` followed by its absolute path. Open it and copy the application to a local test directory.
 
 These commands ignore `.env.macos` and inherited release settings, use `com.deepseek.harness` as the app ID, and omit automatic-update and mandatory-update configuration. Build tools, standard network proxies, and `DSH_DESKTOP_NPM_REGISTRY` remain available from the shell. They skip Developer ID signing, Apple notarization, temporary signing keychains, and notarization proxy changes. Electron receives a local ad-hoc signature without certificates so the modified executable can run; the DMG is unsigned. Both preparation and the assembled application still run runtime integrity and smoke checks. Local builds omit update feeds, ZIPs, and release completion records, and the upload commands cannot publish them. macOS may require approval in System Settings → Privacy & Security to open an unnotarized application. These builds stage no Computer Use helper, so Computer Use reports the missing helper when it prepares.
+
+<a id="local-linux-appimage"></a>
+
+## Local Linux AppImage
+
+On a Linux x64 host, run one command from the repository root. No dotenv, signing, or update service configuration is required:
+
+```sh
+pnpm run package:linux:x64:unsigned
+```
+
+Add `--check` to validate local configuration and tools without building, or `--dir` to stop at the unpacked application. The AppImage is `apps/desktop/.desktop-build/targets/linux-x64/unsigned-artifacts/deepseek-harness-<version>-linux-x86_64-unsigned.AppImage`. After all checks pass, the command prints `AppImage:` followed by its absolute path; mark it executable and run it directly.
+
+These commands ignore release settings, use `com.deepseek.harness` as the app ID, and omit automatic-update and mandatory-update configuration. There is no signing, notarization, or release completion record, and the upload commands cannot publish the artifact. The build requires GNU tar, and dependency installation and runtime preparation need access to npm, GitHub release assets, nodejs.org, and pythonhosted.org; use the existing registry and proxy configuration when the network requires it. The runtime ships an Electron-safe sharp rebuild because Electron's Linux binaries leak their system glib symbols into the process, which crashes upstream sharp's first image decode; a runtime-only [LibreOffice kit patch](../patches/@deepseek-ai__libreoffice-kit@0.1.5.patch) keeps the engine resolver inside the packaged ASAR falling back to WASM. These builds stage no Computer Use helper.
 
 <a id="macos-release-signing"></a>
 

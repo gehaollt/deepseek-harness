@@ -91,6 +91,13 @@ it('retains native prebuilds for the selected macOS architecture', () => {
   expect(desktopRuntimeFileExclusion('node-pty/prebuilds/win32-x64/conpty.node', mac, 'darwin-arm64')).toBeDefined()
 })
 
+it('excludes upstream sharp binaries only when the Linux replacement replaces them', () => {
+  const linux = { platform: 'linux' as const, arch: 'x64' }
+  expect(desktopRuntimeFileExclusion('@img/sharp-linux-x64/lib/sharp-linux-x64.node', linux, 'wasm')).toBe('Linux sharp replacement')
+  expect(desktopRuntimeFileExclusion('@img/sharp-libvips-linux-x64/lib/libvips-cpp.so.8.18.7', linux, 'wasm')).toBe('Linux sharp replacement')
+  expect(desktopRuntimeFileExclusion('@img/sharp-linux-x64/lib/sharp-linux-x64.node', windows, 'win32-x64')).toBeUndefined()
+})
+
 it.each([
   ['darwin', 'arm64'], ['darwin', 'x64'],
   ['linux', 'arm64'], ['linux', 'x64'],

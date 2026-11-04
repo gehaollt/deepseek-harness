@@ -27,6 +27,11 @@ export function desktopRuntimeFileExclusion(
   if (name.startsWith('@deepseek-ai/libreoffice-kit-')) {
     if (name !== `@deepseek-ai/libreoffice-kit-${officeEngine}`) return 'LibreOffice other platform'
   }
+  // Electron's Linux binaries leak their system glib symbols into the process, so the Linux
+  // runtime ships the Electron-safe sharp rebuild, which bundles its own patched binaries.
+  if (target.platform === 'linux' && (name === '@img/sharp-linux-x64' || name === '@img/sharp-libvips-linux-x64')) {
+    return 'Linux sharp replacement'
+  }
   if (name === 'fs-ext' && /^build\/(?:Release|Debug)\/(?:obj(?:\/|$)|fs_ext\.(?:exp|lib|pdb|iobj|ipdb)$)/u.test(entry)) {
     return 'fs-ext compiler output'
   }

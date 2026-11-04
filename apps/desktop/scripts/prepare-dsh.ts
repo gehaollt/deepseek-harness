@@ -44,13 +44,39 @@ const STORE_ROOT = BUILD_PATHS.pnpmStore
 const RUNTIME_ROOT = BUILD_PATHS.runtime
 const PNPM_BUILD_STATE = BUILD_PATHS.dshPnpm
 const PACKAGE_SET_ROOT = BUILD_PATHS.packageSet
-const NODE = join(BUILD_PATHS.electron, process.platform === 'win32' ? 'electron.exe' : 'Electron.app/Contents/MacOS/Electron')
+const NODE = join(BUILD_PATHS.electron, process.platform === 'win32' ? 'electron.exe' : process.platform === 'linux' ? 'electron' : 'Electron.app/Contents/MacOS/Electron')
 const PNPM = join(RUNTIME_ROOT, 'primary-runtime', 'dependencies', 'pnpm', 'bin', 'pnpm.mjs')
 
 function manifestVersion(path: string, subject: string): string {
   const manifest = JSON.parse(readFileSync(path, 'utf8')) as { version?: unknown }
   if (typeof manifest.version !== 'string') throw new Error(`desktop runtime: ${subject} has no version`)
   return manifest.version
+}
+
+/**
+ * Replace sharp with the Electron-safe rebuild in a materialized Linux runtime.
+ * Electron's Linux binaries dynamically link the system glib and leak its symbols into the
+ * process, while sharp's prebuilt libvips statically links its own glib; the mixed symbol
+ * resolution segfaults on the first image decode (sharp docs "Electron and Linux",
+ * electron/electron#46323). The replacement bundles glib-symbol-patched binaries.
+ * @param output - Materialized runtime root whose node_modules receive the replacement.
+ * @param sharpVersion - Version the runtime package set declares for sharp, which the
+ * replacement's manifest must adopt to keep shared-package verification exact.
+ */
+function replaceSharpForElectronLinux(output: string, sharpVersion: string): void {
+  const replacement = resolve(APP_ROOT, 'node_modules', '@janhapke', 'sharp-electron')
+  if (!existsSync(join(replacement, 'linux-x64', 'sharp', 'dist', 'index.cjs'))) {
+    throw new Error('desktop runtime: missing @janhapke/sharp-electron with its linux-x64 payload; install the apps/desktop devDependency')
+  }
+  const destination = join(output, 'node_modules', 'sharp')
+  rmSync(destination, { recursive: true, force: true })
+  // The pnpm-installed replacement resolves through a symlink, so the copy must dereference it.
+  cpSync(replacement, destination, { recursive: true, dereference: true })
+  const manifestPath = join(destination, 'package.json')
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as { name?: string; version?: string }
+  manifest.name = 'sharp'
+  manifest.version = sharpVersion
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, undefined, 2)}\n`)
 }
 
 function desktopRelease(): DesktopRelease {
@@ -151,6 +177,14 @@ async function main(): Promise<void> {
         filter: source => desktopRuntimeFileExclusion(relative(modules, source), target, officeEngine) === undefined,
       })
     })
+    if (target.platform === 'linux') {
+      const installedSharp = JSON.parse(readFileSync(join(DSH_OUTPUT_ROOT, 'node_modules', 'sharp', 'package.json'), 'utf8')) as { name?: string; version?: string }
+      if (installedSharp.name !== 'sharp' || typeof installedSharp.version !== 'string') {
+        throw new Error('desktop runtime: the materialized runtime does not contain sharp')
+      }
+      await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:replace-sharp-linux', async () =>
+        replaceSharpForElectronLinux(DSH_OUTPUT_ROOT, installedSharp.version!))
+    }
     writeFileSync(join(DSH_OUTPUT_ROOT, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh-desktop-runtime', private: true, version: release.version, type: 'module',
       dependencies: Object.fromEntries(packageSet.packages.map(entry => [entry.name, entry.version])),
