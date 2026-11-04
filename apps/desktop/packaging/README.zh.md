@@ -188,6 +188,8 @@ pnpm run package:linux:x64:unsigned
 
 这些命令忽略发布配置，使用 `com.deepseek.harness` 作为应用 ID，并省略自动更新和强制更新配置。没有签名、公证或发布完成记录，上传命令无法发布该产物。构建需要 GNU tar；依赖安装和运行时准备需要访问 npm、GitHub release 资源、nodejs.org 和 pythonhosted.org，网络需要时使用现有 registry 和代理配置。运行时内置 Electron 安全版 sharp 重建，因为 Electron 的 Linux 二进制会把系统 glib 符号泄漏进进程，导致上游 sharp 首次图片解码时崩溃；一个 runtime-only [LibreOffice kit 补丁](../patches/@deepseek-ai__libreoffice-kit@0.1.5.patch)保证打包 ASAR 内的引擎解析器回退到 WASM。这类构建不放入 Computer Use helper。
 
+运行应用需要可用的 Chromium 沙箱。打包产物中的 `chrome-sandbox` helper 不是 setuid-root，且 AppImage 挂载会忽略 setuid 位，因此应用使用内核的非特权 user namespace 沙箱；在限制该能力的发行版上（Ubuntu 23.10 及以后），执行一次 `echo 'kernel.apparmor_restrict_unprivileged_userns = 0' | sudo tee /etc/sysctl.d/60-electron-userns.conf && sudo sysctl --system` 即可。对解包后的应用目录，另一种做法是在可执行文件旁执行 `sudo chown root:root chrome-sandbox && sudo chmod 4755 chrome-sandbox`。
+
 <a id="macos-release-signing"></a>
 
 ## macOS 发布签名与诊断

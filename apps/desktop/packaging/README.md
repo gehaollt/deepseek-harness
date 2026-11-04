@@ -188,6 +188,8 @@ Add `--check` to validate local configuration and tools without building, or `--
 
 These commands ignore release settings, use `com.deepseek.harness` as the app ID, and omit automatic-update and mandatory-update configuration. There is no signing, notarization, or release completion record, and the upload commands cannot publish the artifact. The build requires GNU tar, and dependency installation and runtime preparation need access to npm, GitHub release assets, nodejs.org, and pythonhosted.org; use the existing registry and proxy configuration when the network requires it. The runtime ships an Electron-safe sharp rebuild because Electron's Linux binaries leak their system glib symbols into the process, which crashes upstream sharp's first image decode; a runtime-only [LibreOffice kit patch](../patches/@deepseek-ai__libreoffice-kit@0.1.5.patch) keeps the engine resolver inside the packaged ASAR falling back to WASM. These builds stage no Computer Use helper.
 
+Running the application needs a working Chromium sandbox. The packaged `chrome-sandbox` helper is not setuid-root, and AppImage mounts ignore the setuid bit, so the application uses the kernel's unprivileged user-namespace sandbox; on distributions that restrict it (Ubuntu 23.10 and later), enable it once with `echo 'kernel.apparmor_restrict_unprivileged_userns = 0' | sudo tee /etc/sysctl.d/60-electron-userns.conf && sudo sysctl --system`. For an unpacked application directory, an alternative is `sudo chown root:root chrome-sandbox && sudo chmod 4755 chrome-sandbox` beside the executable.
+
 <a id="macos-release-signing"></a>
 
 ## macOS release signing and diagnostics
